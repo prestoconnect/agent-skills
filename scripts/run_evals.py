@@ -48,7 +48,7 @@ def run_case(case: dict, arm: str, run_root: Path, timeout: int) -> dict:
     else:
         executable = ["codex"]
     command = [
-        *executable, "exec", "--ephemeral", "--skip-git-repo-check",
+        *executable, "exec", "--ephemeral", "--skip-git-repo-check", "--disable", "memories",
         "-C", str(workspace), "-s", "workspace-write", "--json",
         "-o", str(result_path), "-",
     ]
@@ -77,6 +77,8 @@ def main() -> int:
     parser.add_argument("--case", action="append", help="Run only the named case; repeatable")
     parser.add_argument("--arm", choices=("both", "skill", "baseline"), default="both")
     parser.add_argument("--timeout", type=int, default=360)
+    parser.add_argument("--runs-dir", type=Path, default=EVALS / "runs",
+                        help="Where to write runs; use a directory outside this repository so the baseline can't read the skill")
     args = parser.parse_args()
     cases = json.loads((EVALS / "evals.json").read_text(encoding="utf-8"))["evals"]
     if args.case:
@@ -85,7 +87,7 @@ def main() -> int:
             parser.error("unknown or duplicate case name")
     if not cases:
         parser.error("no cases selected")
-    run_root = EVALS / "runs" / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    run_root = args.runs_dir.resolve() / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     run_root.mkdir(parents=True, exist_ok=False)
     print(f"run: {run_root}", flush=True)
     arms = ("baseline", "skill") if args.arm == "both" else (args.arm,)

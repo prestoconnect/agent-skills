@@ -81,13 +81,20 @@ plugins/prestoconnect/skills/presto-pay/
 python scripts/check_skills.py            # frontmatter, file references, SDK version pins
 python scripts/check_skills.py --offline  # skip comparing pins with GitHub release tags
 python scripts/run_evals.py --case go-webhook-raw-body-fix  # baseline and skill in separate fixture copies
+python scripts/run_trigger_evals.py       # does Claude Code load the skill for evals/trigger-evals.json
 claude plugin validate .                  # marketplace manifest
 claude plugin validate plugins/prestoconnect # plugin manifest
 ```
 
-The evaluation runner requires the Codex CLI and API access. It writes per-arm code, event logs, and results under
-the ignored `evals/runs/` directory. Use `--case` to select cases, `--arm` for one side, and `--timeout` to limit
-each run.
+The evaluation runner requires the Codex CLI and API access, and runs Codex with its memories disabled. It writes
+per-arm code, event logs, and results under the ignored `evals/runs/` directory. Use `--case` to select cases,
+`--arm` for one side, and `--timeout` to limit each run. For a fair baseline, pass `--runs-dir` with a directory
+outside this repository and the SDK checkouts, so the baseline agent can't find the skill on disk.
+
+The trigger runner requires the Claude Code CLI. It sends each prompt in `evals/trigger-evals.json` to
+`claude -p` with only this plugin loaded and no user settings or MCP servers, and checks whether the first turn
+loads `presto-pay`. Each prompt runs three times and passes on the majority; use `--runs-per-query`, `--model`,
+and `--workers` to change that.
 
 When an SDK releases a version that changes its public API, update that language file and its
 `Written against` line. The online check fails if a pin is behind or release tags cannot be read; use
