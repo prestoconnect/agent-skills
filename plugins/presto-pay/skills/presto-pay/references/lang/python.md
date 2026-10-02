@@ -177,26 +177,11 @@ string.
 
 ### One update function for return page and webhook
 
-```python
-from presto_pay import PaymentStatus, QueryResult
-
-
-def apply_payment_result(order: Order, result: QueryResult) -> None:
-    if order.payment_status == result.payment_status:
-        return
-    became_paid = result.payment_status == PaymentStatus.AUTHORISED and order.payment_status in (
-        None,
-        PaymentStatus.PENDING_AUTHORISE,
-    )
-    order.payment_status = result.payment_status
-    order.save()
-    if became_paid:
-        fulfil(order)
-```
-
-Adapt it to the app's models and transaction handling; the point is that both callers go through it, and
-fulfilment happens once, on the transition into `Authorised`. Guard against stale results moving an order
-backwards in whatever way fits the app's status model.
+Both callers pass the `QueryResult` to one order service. In one database transaction, lock the order or use a
+conditional update, reject stale status changes, save the new status, and insert a fulfillment job with a unique
+order key only when the status first becomes `PaymentStatus.AUTHORISED`. Commit before running fulfillment. The
+job must be retryable and its fulfillment operation idempotent. Saving the paid status and then calling
+`fulfil(order)` outside the transaction can leave a paid order unfulfilled if that call fails.
 
 ## Webhooks
 

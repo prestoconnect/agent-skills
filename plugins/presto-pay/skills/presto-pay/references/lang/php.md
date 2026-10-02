@@ -183,23 +183,11 @@ passed in `allowedPaymentMethods` as a string.
 
 ### One update function for return page and webhook
 
-```php
-use PrestoUniverse\PrestoPay\PaymentStatus;
-
-public function applyPaymentStatus(Order $order, string $paymentStatus): void
-{
-    if ($order->paymentStatus === $paymentStatus) {
-        return;
-    }
-    $becamePaid = $paymentStatus === PaymentStatus::AUTHORISED
-        && in_array($order->paymentStatus, [null, PaymentStatus::PENDING_AUTHORISE], true);
-    $order->paymentStatus = $paymentStatus;
-    $order->save();
-    if ($becamePaid) {
-        $this->fulfilment->fulfil($order);
-    }
-}
-```
+Both callers pass the query result to one order service. In a database transaction, lock the order or use a
+conditional update, reject stale status changes, save the new status, and insert a fulfillment job with a unique
+order key when the status first becomes `PaymentStatus::AUTHORISED`. Commit before processing the job. Make
+fulfillment idempotent and retryable. Saving `paymentStatus` and then calling `fulfil` can leave a paid order
+unfulfilled if fulfillment fails.
 
 ## Webhooks
 

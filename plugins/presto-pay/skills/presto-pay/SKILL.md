@@ -68,7 +68,8 @@ doesn't mention them, and point out existing code that breaks them.
 7. **Webhooks are delivered more than once.** Record each handled `eventRefNum` and skip repeats. Reply with the
    SDK's ack: "OK" when handled, "resend" when your own processing failed so Presto delivers it again.
 8. **Return page and webhook race.** They arrive in either order. Route both through one idempotent "update order
-   from query result" function.
+   from query result" function. Commit the status transition and a unique fulfillment job in one database
+   transaction. A failed fulfillment must remain retryable; concurrent callers must not enqueue it twice.
 9. **Amounts are integers in minor units.** `10000` is MYR 100.00. Never use floats for money.
 10. **`txnRefNum` is unique per payment, at most 50 characters.** Usually the order ID; generate a new one for a
     new payment attempt on the same order.
@@ -91,13 +92,15 @@ doesn't mention them, and point out existing code that breaks them.
    `.gitignore`.
 4. Create one shared client at startup, in the framework's usual place for singletons.
 5. Persist per order: `txnRefNum`, `paymentRefNum` (from `init`), the latest payment status, and the handled
-   webhook `eventRefNum`s. Use the app's existing database layer.
+   webhook `eventRefNum`s. Use the app's existing database layer. Add a durable, unique fulfillment job or the
+   app's equivalent transactionally coupled to the paid transition.
 6. Checkout endpoint: `init`, save `paymentRefNum`, redirect the shopper to `paymentUrl`.
 7. Return page at `redirectUrl`: `query`, update the order, show paid / processing / not paid.
 8. Webhook endpoint at `notifyUrl`: verify the raw body, skip handled events, `query`, update the order, reply
    with the ack.
-9. Tests: stub the Presto client at the boundary and cover paid, pending, failed, duplicate webhook and
-   unknown-status cases. Don't call the real gateway from unit tests.
+9. Tests: stub the Presto client at the boundary and cover paid, pending, failed, duplicate webhook,
+   concurrent return/webhook, fulfillment failure and retry, and unknown-status cases. Don't call the real
+   gateway from unit tests.
 10. Finish with a short list of what the merchant still has to do: fill in credentials, register their public
     key with Presto, expose `notifyUrl` publicly (a tunnel such as ngrok for local development), and run one
     staging payment end to end.

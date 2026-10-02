@@ -67,12 +67,18 @@ plugins/presto-pay/skills/presto-pay/
 ```bash
 python scripts/check_skills.py            # frontmatter, file references, SDK version pins
 python scripts/check_skills.py --offline  # skip comparing pins with GitHub release tags
+python scripts/run_evals.py --case go-webhook-raw-body-fix  # baseline and skill in separate fixture copies
 claude plugin validate .                  # marketplace manifest
 claude plugin validate plugins/presto-pay # plugin manifest
 ```
 
+The evaluation runner requires the Codex CLI and API access. It writes per-arm code, event logs, and results under
+the ignored `evals/runs/` directory. Use `--case` to select cases, `--arm` for one side, and `--timeout` to limit
+each run. The [2026-10-02 evaluation](evals/results-2026-10-02.md) records the current comparisons and limits.
+
 When an SDK releases a version that changes its public API, update that language file and its
-`Written against` line. `check_skills.py` fails while a pin is behind the latest release tag.
+`Written against` line. The online check fails if a pin is behind or release tags cannot be read; use
+`--offline` to check only local skill structure and pin syntax.
 
 ## License
 

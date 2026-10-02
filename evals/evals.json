@@ -5,8 +5,8 @@
       "id": 1,
       "name": "python-fastapi-full-integration",
       "prompt": "Add Presto Pay to this FastAPI shop. There's an Order model in app/models.py with id, total_cents and status, and SQLAlchemy async sessions in app/db.py. I want a POST /checkout/{order_id} that sends the shopper to Presto, a return page, and the webhook. Presto gave us staging credentials, I'll put them in .env.",
-      "expected_output": "Uses AsyncPrestoPay from presto_pay, created once in the lifespan; init with integer amount and redirect to payment_url; return page and webhook both query and share one update function; webhook verifies the raw body, answers 401 on PrestoPaySignatureError, dedups on event_ref_num under a unique constraint, replies NotifyAck; credentials via env vars with .env.example; no hand-rolled signing.",
-      "files": [],
+      "expected_output": "Uses AsyncPrestoPay from presto_pay, created once in the lifespan; init with integer amount and redirect to payment_url; return page and webhook both query and share one update function; the paid transition commits with one durable fulfillment job, which can be retried; webhook verifies the raw body, answers 401 on PrestoPaySignatureError, dedups on event_ref_num under a unique constraint, replies NotifyAck; credentials via env vars with .env.example; no hand-rolled signing.",
+      "files": ["app/db.py", "app/main.py", "app/models.py", "pyproject.toml", ".gitignore"],
       "assertions": [
         {"text": "Depends on presto-pay-sdk and imports from presto_pay", "type": "programmatic"},
         {"text": "No hand-written RSA signing or canonical string code (no cryptography sign calls, no hashlib/sha256 of request fields)", "type": "programmatic"},
@@ -15,6 +15,8 @@
         {"text": "Webhook returns 401 for PrestoPaySignatureError and HTTP 200 with a NotifyAck body otherwise", "type": "programmatic"},
         {"text": "Webhook calls payments.query and does not derive the status from event_code or success", "type": "judgment"},
         {"text": "event_ref_num is deduplicated with a unique constraint or equivalent atomic insert", "type": "judgment"},
+        {"text": "Concurrent return and webhook calls commit at most one durable fulfillment job with the paid status transition", "type": "judgment"},
+        {"text": "A failed fulfillment remains retryable after the order is marked paid", "type": "judgment"},
         {"text": "Return page calls payments.query and does not trust URL parameters for the status", "type": "judgment"},
         {"text": "amount is passed as an int of minor units", "type": "judgment"},
         {"text": "No private key, mid or prestoMrn value is hard-coded; variables are listed in .env.example and key files are git-ignored", "type": "programmatic"}
@@ -25,7 +27,7 @@
       "name": "java-spring-refund-unknown-outcome",
       "prompt": "In our Spring Boot back office (src/main/java/com/acme/admin), add a service method and an admin-only endpoint to refund a Presto Pay payment, full or partial. We already have a PrestoPayClient bean. Make sure a timeout can't refund someone twice.",
       "expected_output": "Uses presto.payments().refund with PaymentRefundRequest builder, a stable refundRefNum stored before calling, remark set; on transport/response/signature exceptions or 5xx it queries first and checks refundDetails for the refundRefNum rather than retrying; endpoint secured to admins; amounts integer minor units.",
-      "files": [],
+      "files": ["pom.xml", "src/main/java/com/acme/admin/Order.java", "src/main/java/com/acme/admin/OrderRepository.java", "src/main/java/com/acme/admin/PrestoConfig.java"],
       "assertions": [
         {"text": "Calls presto.payments().refund(PaymentRefundRequest.builder()...build())", "type": "programmatic"},
         {"text": "refundRefNum is derived deterministically and persisted before the call", "type": "judgment"},
@@ -39,13 +41,14 @@
       "id": 3,
       "name": "go-webhook-raw-body-fix",
       "prompt": "Our Presto webhook in internal/http/presto.go decodes the JSON into a struct with json.NewDecoder and then marks the order paid when EventCode == \"Authorised\". It sometimes double-ships. Fix it properly.",
-      "expected_output": "Replaces decoding with verifier.VerifyRequest(r) (or Verify on raw bytes), answers 401 on *prestopay.SignatureError, queries payment status with client.Payments.Query, dedups on EventRefNum under a unique constraint in the same transaction, fulfils only on the transition into Authorised, replies with prestopay.WriteAck.",
-      "files": [],
+      "expected_output": "Replaces decoding with verifier.VerifyRequest(r) (or Verify on raw bytes), answers 401 on *prestopay.SignatureError, queries payment status with client.Payments.Query, dedups on EventRefNum under a unique constraint in the same transaction, commits one durable fulfillment job with the paid transition, and replies with prestopay.WriteAck. Fulfillment failures remain retryable.",
+      "files": ["go.mod", "internal/http/presto.go"],
       "assertions": [
         {"text": "Uses verifier.VerifyRequest(r) or verifier.Verify(rawBody)", "type": "programmatic"},
         {"text": "Returns http.StatusUnauthorized for *prestopay.SignatureError", "type": "programmatic"},
         {"text": "Calls client.Payments.Query and uses its PaymentStatus instead of EventCode", "type": "judgment"},
         {"text": "Deduplicates on EventRefNum atomically with the order update", "type": "judgment"},
+        {"text": "Concurrent return and webhook requests cannot fulfill twice, and fulfillment failure remains retryable", "type": "judgment"},
         {"text": "Replies with prestopay.WriteAck using AckOK / AckResend appropriately", "type": "programmatic"},
         {"text": "Explains the double-shipping cause (redelivery without dedup and/or trusting EventCode)", "type": "judgment"}
       ]
@@ -54,15 +57,16 @@
       "id": 4,
       "name": "js-nextjs-checkout",
       "prompt": "set up presto pay checkout in our next.js app router project (app/ dir, prisma for the db, Order has id + amountCents). need the pay button server action, the return page and the webhook route. deploy target is vercel.",
-      "expected_output": "Installs @prestouniverse/presto-pay-sdk; client in a server-only module from fromEnv(process.env); server action calls init and redirect(paymentUrl); return page queries; app/.../route.ts POST passes the Request to webhooks.verify, 401 on PrestoPaySignatureError, NotifyAck responses, dedup on eventRefNum; no NEXT_PUBLIC_ secrets; no import in client components.",
-      "files": [],
+      "expected_output": "Installs @prestouniverse/presto-pay-sdk; client in a server-only module from fromEnv(process.env); server action calls init and redirect(paymentUrl); return page queries; app/.../route.ts POST passes the Request to webhooks.verify, 401 on PrestoPaySignatureError, NotifyAck responses, dedup on eventRefNum; one durable fulfillment job commits with the paid transition; no NEXT_PUBLIC_ secrets; no import in client components.",
+      "files": ["package.json", "prisma/schema.prisma", "app/page.tsx", "tsconfig.json", ".gitignore"],
       "assertions": [
         {"text": "Imports @prestouniverse/presto-pay-sdk only from server-side files", "type": "programmatic"},
         {"text": "No NEXT_PUBLIC_ variable holds Presto keys or ids", "type": "programmatic"},
         {"text": "Webhook route passes the Request or raw text to webhooks.verify without calling request.json() first", "type": "programmatic"},
         {"text": "Signature errors return 401 via isPrestoPayError + error.name check, not instanceof", "type": "programmatic"},
         {"text": "Return page queries Presto for the status", "type": "judgment"},
-        {"text": "eventRefNum dedup via a unique column in Prisma", "type": "judgment"}
+        {"text": "eventRefNum dedup via a unique column in Prisma", "type": "judgment"},
+        {"text": "Paid status and one durable fulfillment job are committed together; failed fulfillment can be retried", "type": "judgment"}
       ]
     },
     {
@@ -70,11 +74,12 @@
       "name": "php-laravel-review",
       "prompt": "We built our Presto Pay integration in Laravel ourselves before the SDK existed (app/Services/PrestoClient.php signs requests with openssl_sign). Review it and tell me what to change before go-live.",
       "expected_output": "Recommends replacing the hand-rolled client with prestouniverse/presto-pay-sdk; walks the go-live checklist (status from query, raw-body webhook verification with 401, dedup, NotifyAck, init resend with same txnRefNum, query before retrying refund, env separation, key outside web root, CSRF exemption); findings ranked by money impact with file references.",
-      "files": [],
+      "files": ["composer.json", "app/Services/PrestoClient.php", "app/Http/Controllers/PrestoWebhookController.php", "routes/web.php"],
       "assertions": [
         {"text": "Recommends replacing hand-rolled openssl_sign signing with the official SDK", "type": "judgment"},
         {"text": "Checks that order status comes from query, not the redirect or webhook fields", "type": "judgment"},
         {"text": "Checks webhook raw-body verification, 401 on bad signature, eventRefNum dedup and NotifyAck replies", "type": "judgment"},
+        {"text": "Checks atomic paid transition and retryable fulfillment when return and webhook race", "type": "judgment"},
         {"text": "Checks key storage outside the web root / source control and staging/production separation", "type": "judgment"},
         {"text": "Findings are ranked by impact and reference files", "type": "judgment"}
       ]

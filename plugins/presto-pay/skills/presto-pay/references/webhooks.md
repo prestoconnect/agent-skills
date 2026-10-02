@@ -36,7 +36,8 @@ In order:
    fail the same way on every redelivery.
 4. If `eventRefNum` was already handled, reply OK.
 5. `query` the payment by `prestoMrn` and `paymentRefNum` from the event.
-6. Update the order through the same function the return page uses, and record `eventRefNum`, atomically.
+6. Update the order through the same function the return page uses, record `eventRefNum`, and insert any
+   newly needed fulfillment job atomically.
 7. Reply HTTP 200 with the OK ack. If steps 4 to 6 failed (database down, `query` failed), reply HTTP 200 with
    the "resend" ack instead, so Presto delivers it again.
 

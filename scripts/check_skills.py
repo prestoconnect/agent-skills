@@ -113,7 +113,7 @@ def check_versions(skill_dir: Path, errors: list[str], offline: bool) -> None:
             continue
         latest = latest_release(repo_url)
         if latest is None:
-            print(f"warning: couldn't read release tags from {repo_url}", file=sys.stderr)
+            errors.append(f"{lang_file.relative_to(ROOT)}: couldn't read release tags from {repo_url}; use --offline to skip this check")
         elif latest != pinned:
             errors.append(f"{lang_file.relative_to(ROOT)}: pins {pinned}, latest release is {latest}")
 

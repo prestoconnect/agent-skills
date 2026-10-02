@@ -177,25 +177,11 @@ an unknown code as it is. Any code can be passed in `AllowedPaymentMethods` as a
 
 ### One update function for return page and webhook
 
-```go
-func (s *OrderService) ApplyPaymentResult(ctx context.Context, order *Order, result *prestopay.QueryResponse) error {
-    if order.PaymentStatus == result.PaymentStatus {
-        return nil
-    }
-    becamePaid := result.PaymentStatus == prestopay.PaymentStatusAuthorised &&
-        (order.PaymentStatus == "" || order.PaymentStatus == prestopay.PaymentStatusPendingAuthorise)
-    order.PaymentStatus = result.PaymentStatus
-    if err := s.orders.Save(ctx, order); err != nil {
-        return err
-    }
-    if becamePaid {
-        return s.fulfil(ctx, order)
-    }
-    return nil
-}
-```
-
-Adapt it to the app's storage and transactions; both the return page and the webhook call it.
+Both callers pass the `QueryResponse` to one order service. In a database transaction, lock the order or use a
+conditional update, reject stale status changes, save the new status, and insert a fulfillment job with a unique
+order key when the status first becomes `prestopay.PaymentStatusAuthorised`. Commit before processing the job.
+Make fulfillment idempotent and retryable. Saving `PaymentStatus` and then calling `fulfil` can leave a paid
+order unfulfilled if that call fails.
 
 ## Webhooks
 

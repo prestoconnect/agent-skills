@@ -179,18 +179,11 @@ an unknown code as it is. The `PaymentMethod` type accepts any string, so a new 
 
 ### One update function for return page and webhook
 
-```ts
-import { PaymentStatus } from '@prestouniverse/presto-pay-sdk';
-
-export async function applyPaymentStatus(order: Order, paymentStatus: string): Promise<void> {
-  if (order.paymentStatus === paymentStatus) return;
-  const becamePaid =
-    paymentStatus === PaymentStatus.Authorised &&
-    (order.paymentStatus == null || order.paymentStatus === PaymentStatus.PendingAuthorise);
-  await orders.update(order.id, { paymentStatus });
-  if (becamePaid) await fulfil(order);
-}
-```
+Both callers pass the query result to one order service. In a database transaction, use a conditional update or
+row lock to prevent concurrent paid transitions, reject stale status changes, and insert a fulfillment job with a
+unique order key when the status first becomes `PaymentStatus.Authorised`. Commit before running fulfillment.
+Make the job retryable and fulfillment idempotent. Updating `paymentStatus` and then calling `fulfil(order)` can
+leave a paid order unfulfilled if fulfillment fails.
 
 ## Webhooks
 

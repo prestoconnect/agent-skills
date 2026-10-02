@@ -185,22 +185,11 @@ be passed to `allowedPaymentMethods(...)` as a string.
 
 ### One update function for return page and webhook
 
-```java
-@Transactional
-public void applyPaymentStatus(Order order, String paymentStatus) {
-    String previous = order.getPaymentStatus();
-    if (Objects.equals(previous, paymentStatus)) {
-        return;
-    }
-    boolean becamePaid = PaymentStatus.Authorised.equals(paymentStatus)
-        && (previous == null || PaymentStatus.PendingAuthorise.equals(previous));
-    order.setPaymentStatus(paymentStatus);
-    orders.save(order);
-    if (becamePaid) {
-        fulfilment.fulfil(order);
-    }
-}
-```
+Both callers pass the query result to one order service. In a `@Transactional` method, lock the order or use a
+conditional update, reject stale status changes, save the new status, and insert a fulfillment job with a unique
+order key when the status first becomes `PaymentStatus.Authorised`. Process the job after commit and make its
+fulfillment action idempotent and retryable. Calling `fulfilment.fulfil(order)` after saving the paid status can
+leave an order unfulfilled if fulfillment fails.
 
 ## Webhooks
 

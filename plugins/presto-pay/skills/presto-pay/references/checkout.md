@@ -110,7 +110,10 @@ The gateway can add statuses. Store an unknown value as it is, treat it as not p
 
 Updates can land out of order: a slow return page may write a `query` result taken before the webhook's.
 Don't let a stale result move an order backwards, for example `Authorised` overwriting a stored `Refunded`.
-Compare with the stored status before writing, and fulfil only on the transition into `Authorised`.
+Serialize updates for the order, reject stale changes, and insert one unique, durable fulfillment job in the
+same transaction as the first transition into `Authorised`. Process that job after commit with retries and an
+idempotent fulfillment action. A status save followed by an in-process fulfillment call can leave the order
+paid but unfulfilled if the process fails between those steps.
 
 ## Payment methods
 
