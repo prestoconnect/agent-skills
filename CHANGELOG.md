@@ -1,10 +1,17 @@
 # Changelog
 
-## Unreleased
+## 0.2.1
 
 - At the end of a full integration, the `presto-pay` skill now reminds the merchant to review every change
   before merging, since they own the code that moves their money, and to include a redelivered webhook in the
   staging payment.
+- The README states that developers review and own the code an agent writes, and names a contact address.
+  Added a security policy.
+- Added `scripts/run_trigger_evals.py`, which checks that Claude Code loads the skill for the prompts in
+  `evals/trigger-evals.json`. The task evaluation runner now disables Codex memories and isolates the skill and
+  fixtures from local SDK checkouts. The refund case now checks that `merchantRefNum` carries `prestoMrn`.
+- Recorded the [2026-10-02 evaluation](evals/results-2026-10-02.md): 20 of 20 trigger prompts, and the skill
+  scored full marks on four of five task cases and 6/7 on the fifth.
 
 ## 0.2.0
 
