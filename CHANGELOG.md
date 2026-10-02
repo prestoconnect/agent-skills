@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- At the end of a full integration, the `presto-pay` skill now reminds the merchant to review every change
+  before merging, since they own the code that moves their money, and to include a redelivered webhook in the
+  staging payment.
+
 ## 0.2.0
 
 - Webhook guidance now guards on the order record instead of deduplicating on `eventRefNum`: query on every

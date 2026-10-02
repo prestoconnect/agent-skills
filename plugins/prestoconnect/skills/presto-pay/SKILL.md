@@ -103,9 +103,11 @@ doesn't mention them, and point out existing code that breaks them.
 9. Tests: stub the Presto client at the boundary and cover paid, pending, failed, duplicate webhook,
    concurrent return/webhook, fulfillment failure and retry, and unknown-status cases. Don't call the real
    gateway from unit tests.
-10. Finish with a short list of what the merchant still has to do: fill in credentials, register their public
-    key with Presto, expose `notifyUrl` publicly (a tunnel such as ngrok for local development), and run one
-    staging payment end to end.
+10. Finish with a short list of what the merchant still has to do: review every change before merging,
+    especially signing, webhooks, refunds and the paid transition, since they own the code that moves their
+    money; fill in credentials, register their public key with Presto, expose `notifyUrl` publicly (a tunnel
+    such as ngrok for local development), and run one staging payment end to end, including a redelivered
+    webhook.
 
 ## 5. Reviewing an existing integration
 
