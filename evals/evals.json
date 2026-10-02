@@ -26,10 +26,11 @@
       "id": 2,
       "name": "java-spring-refund-unknown-outcome",
       "prompt": "In our Spring Boot back office (src/main/java/com/acme/admin), add a service method and an admin-only endpoint to refund a Presto Pay payment, full or partial. We already have a PrestoPayClient bean. Make sure a timeout can't refund someone twice.",
-      "expected_output": "Uses presto.payments().refund with PaymentRefundRequest builder, a stable refundRefNum stored before calling, remark set; on transport/response/signature exceptions or 5xx it queries first and checks refundDetails for the refundRefNum rather than retrying; endpoint secured to admins; amounts integer minor units.",
+      "expected_output": "Uses presto.payments().refund with PaymentRefundRequest builder, merchantRefNum set to the configured prestoMrn (not the mid), a stable refundRefNum stored before calling, remark set; on transport/response/signature exceptions or 5xx it queries first and checks refundDetails for the refundRefNum rather than retrying; endpoint secured to admins; amounts integer minor units.",
       "files": ["pom.xml", "src/main/java/com/acme/admin/Order.java", "src/main/java/com/acme/admin/OrderRepository.java", "src/main/java/com/acme/admin/PrestoConfig.java"],
       "assertions": [
         {"text": "Calls presto.payments().refund(PaymentRefundRequest.builder()...build())", "type": "programmatic"},
+        {"text": "merchantRefNum is the configured prestoMrn, not the client's merchant ID (mid)", "type": "judgment"},
         {"text": "refundRefNum is derived deterministically and persisted before the call", "type": "judgment"},
         {"text": "On an unknown outcome it queries and inspects refundDetails / refundStatus before any retry", "type": "judgment"},
         {"text": "Does not wrap refund in a generic retry loop or @Retryable", "type": "programmatic"},

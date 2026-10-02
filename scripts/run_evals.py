@@ -39,7 +39,8 @@ def run_case(case: dict, arm: str, run_root: Path, timeout: int) -> dict:
     workspace = prepare_workspace(case, arm, run_root)
     prompt = case["prompt"]
     if arm == "skill":
-        prompt = f"Read and apply the Presto Pay skill at {SKILL}. Then complete this request:\n\n{prompt}"
+        skill = run_root / "skill" / SKILL.parent.name / SKILL.name
+        prompt = f"Read and apply the Presto Pay skill at {skill}. Then complete this request:\n\n{prompt}"
     prompt += "\n\nWork only in this fixture. Do not install dependencies or contact live services. State any unfinished work."
     result_path = workspace.parent / f"{arm}-answer.txt"
     if os.name == "nt":
@@ -91,6 +92,9 @@ def main() -> int:
     run_root.mkdir(parents=True, exist_ok=False)
     print(f"run: {run_root}", flush=True)
     arms = ("baseline", "skill") if args.arm == "both" else (args.arm,)
+    if "skill" in arms:
+        # A copy keeps the skill arm from wandering into SDK checkouts that sit next to this repository.
+        shutil.copytree(SKILL.parent, run_root / "skill" / SKILL.parent.name)
     results = []
     results_path = run_root / "results.json"
     for case in cases:
