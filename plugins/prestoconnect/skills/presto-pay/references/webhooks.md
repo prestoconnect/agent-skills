@@ -79,9 +79,9 @@ from the exception; check for the signature error first, since 401 is the right 
 
 ## Redeliveries: guard on the order
 
-Presto redelivers 1, 2, 5 and 10 minutes after the first attempt, up to five deliveries over about 18 minutes.
-Each delivery carries a fresh timestamp, so it always passes the freshness check. The return page may also update
-the same order first. Don't track events; check the order record:
+Presto resends with a backoff of 2, 4, 8, 16, 32, 64, 128, 256, 512 and 1024 minutes between attempts, up to 11
+deliveries over about 34 hours. Each delivery carries a fresh timestamp, so it always passes the freshness check.
+The return page may also update the same order first. Don't track events; check the order record:
 
 - Apply the queried status in one conditional update, so only one caller can finalise the order:
   `UPDATE orders SET status = :new WHERE txn_ref_num = :ref AND status = 'PendingAuthorise'`.
@@ -114,7 +114,7 @@ IDs but not the private key; each SDK has a standalone verifier for that.
 
 - Parsing the JSON body, or binding it to a DTO, before verifying.
 - Fulfilling the order from `eventCode` or `success` instead of `query`.
-- Fulfilling on every delivery: up to five shipments for one payment. Guard on the order's status instead.
+- Fulfilling on every delivery: up to 11 shipments for one payment. Guard on the order's status instead.
 - Replying "resend" to a bad signature, which makes Presto retry something that can never succeed.
 - Replying non-200 when your own processing fails: use the "resend" ack instead, so the reply means what you
   intend.
