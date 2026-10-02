@@ -1,12 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
 - Webhook guidance now guards on the order record instead of deduplicating on `eventRefNum`: query on every
   delivery and apply the status with a conditional update that finalises the order only once and fulfils only on
   the change into `Authorised`. Updated `SKILL.md`, `webhooks.md`, `go-live.md`, every language file and the
   evaluation expectations.
-- Renamed the plugin to `prestoconnect` so further skills can be added to it later, and moved the repository to `prestoconnect/agent-skills`. Install with `/plugin install prestoconnect@presto-pay`. The `presto-pay` skill itself is unchanged.
+- Renamed the plugin and the marketplace to `prestoconnect` so further skills can be added later, and moved the
+  repository to `prestoconnect/agent-skills`. Install with `/plugin install prestoconnect@prestoconnect`. If you
+  added the earlier `presto-pay` marketplace, remove it with `/plugin marketplace remove presto-pay` and add this
+  repository again.
+- Removed the 2026-10-02 evaluation write-up, which predated the webhook change.
 
 ## 0.1.0
 

@@ -34,7 +34,7 @@ and no secrets in source control.
 
 ```
 /plugin marketplace add prestoconnect/agent-skills
-/plugin install prestoconnect@presto-pay
+/plugin install prestoconnect@prestoconnect
 ```
 
 ### Other agents
@@ -60,7 +60,7 @@ For `presto-pay`, the skill can't create these for you:
 ## Contents
 
 ```
-.claude-plugin/marketplace.json     marketplace "presto-pay"
+.claude-plugin/marketplace.json     marketplace "prestoconnect"
 plugins/prestoconnect/              plugin "prestoconnect"; add new skills under skills/
 plugins/prestoconnect/skills/presto-pay/
   SKILL.md                      rules, workflow, routing
@@ -85,7 +85,7 @@ claude plugin validate plugins/prestoconnect # plugin manifest
 
 The evaluation runner requires the Codex CLI and API access. It writes per-arm code, event logs, and results under
 the ignored `evals/runs/` directory. Use `--case` to select cases, `--arm` for one side, and `--timeout` to limit
-each run. The [2026-10-02 evaluation](evals/results-2026-10-02.md) records the current comparisons and limits.
+each run.
 
 When an SDK releases a version that changes its public API, update that language file and its
 `Written against` line. The online check fails if a pin is behind or release tags cannot be read; use

@@ -98,8 +98,8 @@ doesn't mention them, and point out existing code that breaks them.
    app's equivalent transactionally coupled to the paid transition.
 6. Checkout endpoint: `init`, save `paymentRefNum`, redirect the shopper to `paymentUrl`.
 7. Return page at `redirectUrl`: `query`, update the order, show paid / processing / not paid.
-8. Webhook endpoint at `notifyUrl`: verify the raw body, skip handled events, `query`, update the order, reply
-   with the ack.
+8. Webhook endpoint at `notifyUrl`: verify the raw body, `query` on every delivery, apply the status through the
+   shared guarded update, reply with the ack.
 9. Tests: stub the Presto client at the boundary and cover paid, pending, failed, duplicate webhook,
    concurrent return/webhook, fulfillment failure and retry, and unknown-status cases. Don't call the real
    gateway from unit tests.

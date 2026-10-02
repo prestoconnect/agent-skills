@@ -1,10 +1,10 @@
 {
-  "name": "presto-pay",
+  "name": "prestoconnect",
   "owner": {
     "name": "Presto Connect"
   },
   "metadata": {
-    "description": "Agent skills for integrating the Presto Pay payment gateway with the official Presto Pay SDKs."
+    "description": "Agent skills from Presto Connect, including Presto Pay payment gateway integration with the official SDKs."
   },
   "plugins": [
     {
