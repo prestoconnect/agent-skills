@@ -1,12 +1,12 @@
 {
-  "name": "presto-pay",
+  "name": "prestoconnect",
   "version": "0.1.0",
   "description": "Integrate Presto Pay checkout, webhooks, refunds and go-live with the official Go, Java, JavaScript, PHP and Python SDKs.",
   "author": {
     "name": "Presto Connect"
   },
-  "homepage": "https://github.com/prestoconnect/presto-pay-agent-skills",
-  "repository": "https://github.com/prestoconnect/presto-pay-agent-skills",
+  "homepage": "https://github.com/prestoconnect/agent-skills",
+  "repository": "https://github.com/prestoconnect/agent-skills",
   "license": "Apache-2.0",
   "keywords": ["payments", "presto", "presto-pay", "payment-gateway", "malaysia"]
 }

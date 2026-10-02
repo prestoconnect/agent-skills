@@ -24,18 +24,18 @@ and no secrets in source control.
 ### Claude Code
 
 ```
-/plugin marketplace add prestoconnect/presto-pay-agent-skills
-/plugin install presto-pay@presto-pay
+/plugin marketplace add prestoconnect/agent-skills
+/plugin install prestoconnect@presto-pay
 ```
 
 ### Other agents
 
-The skill is the folder [`plugins/presto-pay/skills/presto-pay`](plugins/presto-pay/skills/presto-pay). Copy it
+The skill is the folder [`plugins/prestoconnect/skills/presto-pay`](plugins/prestoconnect/skills/presto-pay). Copy it
 into your agent's skills directory, for example for a single project:
 
 ```bash
-git clone --depth 1 https://github.com/prestoconnect/presto-pay-agent-skills
-cp -r presto-pay-agent-skills/plugins/presto-pay/skills/presto-pay <your-agent-skills-dir>/presto-pay
+git clone --depth 1 https://github.com/prestoconnect/agent-skills
+cp -r agent-skills/plugins/prestoconnect/skills/presto-pay <your-agent-skills-dir>/presto-pay
 ```
 
 The folder is self-contained, so it works wherever your agent reads `SKILL.md` skills.
@@ -51,7 +51,7 @@ The skill can't create these for you:
 ## Contents
 
 ```
-plugins/presto-pay/skills/presto-pay/
+plugins/prestoconnect/skills/presto-pay/
   SKILL.md                      rules, workflow, routing
   references/
     setup.md                    keys, credentials, configuration, several merchants
@@ -69,7 +69,7 @@ python scripts/check_skills.py            # frontmatter, file references, SDK ve
 python scripts/check_skills.py --offline  # skip comparing pins with GitHub release tags
 python scripts/run_evals.py --case go-webhook-raw-body-fix  # baseline and skill in separate fixture copies
 claude plugin validate .                  # marketplace manifest
-claude plugin validate plugins/presto-pay # plugin manifest
+claude plugin validate plugins/prestoconnect # plugin manifest
 ```
 
 The evaluation runner requires the Codex CLI and API access. It writes per-arm code, event logs, and results under

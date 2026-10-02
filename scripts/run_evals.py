@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 EVALS = ROOT / "evals"
-SKILL = ROOT / "plugins" / "presto-pay" / "skills" / "presto-pay" / "SKILL.md"
+SKILL = ROOT / "plugins" / "prestoconnect" / "skills" / "presto-pay" / "SKILL.md"
 
 
 def checked_fixture_path(case_name: str, relative_path: str) -> Path:
