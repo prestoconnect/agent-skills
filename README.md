@@ -57,6 +57,8 @@ For `presto-pay`, the skill can't create these for you:
 - Presto's certificate (`.der`) for each environment.
 - Registration of your public key, which the skill helps you generate.
 
+Request these, or ask questions about the skills, at [developer@prestoconnect.io](mailto:developer@prestoconnect.io).
+
 ## Contents
 
 ```
@@ -90,6 +92,10 @@ each run.
 When an SDK releases a version that changes its public API, update that language file and its
 `Written against` line. The online check fails if a pin is behind or release tags cannot be read; use
 `--offline` to check only local skill structure and pin syntax.
+
+## Security
+
+Report vulnerabilities privately, not in a public issue. See [SECURITY.md](SECURITY.md).
 
 ## License
 

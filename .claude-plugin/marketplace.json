@@ -1,7 +1,8 @@
 {
   "name": "prestoconnect",
   "owner": {
-    "name": "Presto Connect"
+    "name": "Presto Connect",
+    "email": "developer@prestoconnect.io"
   },
   "metadata": {
     "description": "Agent skills from Presto Connect, including Presto Pay payment gateway integration with the official SDKs."
