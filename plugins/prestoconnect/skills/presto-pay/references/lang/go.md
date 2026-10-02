@@ -216,9 +216,9 @@ func (h *Handlers) PrestoNotify(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // In one transaction: insert event.EventRefNum into a table with a unique constraint;
-    // if it already exists, it's a redelivery, so skip; otherwise apply the result to the order.
-    if err := h.orders.HandleWebhookOnce(r.Context(), event.EventRefNum, event.TxnRefNum, payment); err != nil {
+    // One conditional update: finalises the order only if it is still PendingAuthorise, and
+    // inserts the fulfilment job in the same transaction only on the change into Authorised.
+    if err := h.orders.ApplyStatus(r.Context(), event.TxnRefNum, payment.PaymentStatus); err != nil {
         prestopay.WriteAck(w, prestopay.AckResend)
         return
     }
@@ -230,8 +230,8 @@ Several `mid`s: `WebhookConfig.MerchantIDs` is a set; use `event.MID` to pick th
 `Query`. A verifier holds no private key, so a webhook-only service (see the Lambda example) needs only Presto's
 certificate and the `mid`s.
 
-Freshness window: `WebhookConfig.MaxTimestampAge` (zero means 15 minutes). Widen only with `EventRefNum` dedup in
-place.
+Freshness window: `WebhookConfig.MaxTimestampAge` (zero means 15 minutes). Widen only with the guarded order update
+in place.
 
 ## Refunds and errors
 

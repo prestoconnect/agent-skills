@@ -227,7 +227,7 @@ public ResponseEntity<String> notify(@RequestBody String rawBody) {
             .merchantRefNum(event.prestoMrn())
             .paymentRefNum(event.paymentRefNum())
             .build());
-        webhookService.handleOnce(event.eventRefNum(), event.txnRefNum(), payment.paymentStatus());
+        orders.applyStatus(event.txnRefNum(), payment.paymentStatus());
     } catch (RuntimeException e) {
         return ack(NotifyAck.resend());
     }
@@ -239,8 +239,9 @@ private static ResponseEntity<String> ack(String body) {
 }
 ```
 
-`handleOnce` is `@Transactional`: insert `eventRefNum` into a table with a unique constraint, return quietly on
-a duplicate-key exception (a redelivery), otherwise call `applyPaymentStatus`.
+`applyStatus` is `@Transactional` and the same method the return page calls: one conditional update
+(`... WHERE txn_ref_num = ? AND status = 'PendingAuthorise'`) that finalises the order only once, inserting the
+fulfillment job only when it moved the order into `Authorised`. A redelivery changes nothing.
 
 Take the body as `@RequestBody String`, never a DTO. With the Servlet API, read `request.getReader()` to the end.
 Exclude the route from Spring Security's CSRF protection and from authentication.
@@ -259,7 +260,7 @@ NotifyEvent event = verifier.parse(rawBody);
 ```
 
 Freshness window: `PrestoPayClient.builder().webhookMaxTimestampAge(Duration)`, or `maxTimestampAge(...)` /
-`disableTimestampCheck()` on `WebhookVerifier.Builder`. Change it only with `eventRefNum` dedup in place.
+`disableTimestampCheck()` on `WebhookVerifier.Builder`. Change it only with the guarded order update in place.
 
 ## Refunds and errors
 

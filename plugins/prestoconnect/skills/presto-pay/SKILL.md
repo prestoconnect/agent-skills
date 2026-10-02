@@ -33,7 +33,7 @@ file you need. If the project has several backends or none yet, ask which one ha
 |------|------|
 | Install the SDK, keys, credentials, client configuration, staging vs production, several merchants | `references/setup.md` |
 | Start a payment, redirect to Presto, the return page, payment statuses, payment methods | `references/checkout.md` |
-| The notify webhook: verify, deduplicate, reply | `references/webhooks.md` |
+| The notify webhook: verify, guard redeliveries, reply | `references/webhooks.md` |
 | Reverse, refund, errors, timeouts, retries, "did it go through?" | `references/refunds-and-errors.md` |
 | Go live, troubleshooting, reviewing an existing integration | `references/go-live.md` |
 
@@ -65,8 +65,10 @@ doesn't mention them, and point out existing code that breaks them.
    only on `Authorised`.
 6. **Verify the raw webhook body.** Pass the exact bytes received to the SDK's webhook verifier before any JSON
    parsing or framework body binding, which changes the bytes and breaks the signature.
-7. **Webhooks are delivered more than once.** Record each handled `eventRefNum` and skip repeats. Reply with the
-   SDK's ack: "OK" when handled, "resend" when your own processing failed so Presto delivers it again.
+7. **Webhooks are delivered more than once.** Guard on the order record, not the event: `query` on every
+   delivery and apply the status with a conditional update that finalises the order only if it hasn't been
+   finalised yet, so a repeat changes nothing. Reply with the SDK's ack: "OK" when handled (including a repeat
+   that changed nothing), "resend" when your own processing failed so Presto delivers it again.
 8. **Return page and webhook race.** They arrive in either order. Route both through one idempotent "update order
    from query result" function. Commit the status transition and a unique fulfillment job in one database
    transaction. A failed fulfillment must remain retryable; concurrent callers must not enqueue it twice.
@@ -91,8 +93,8 @@ doesn't mention them, and point out existing code that breaks them.
    variable names to `.env.example` or the project's equivalent with placeholder values, and key files to
    `.gitignore`.
 4. Create one shared client at startup, in the framework's usual place for singletons.
-5. Persist per order: `txnRefNum`, `paymentRefNum` (from `init`), the latest payment status, and the handled
-   webhook `eventRefNum`s. Use the app's existing database layer. Add a durable, unique fulfillment job or the
+5. Persist per order: `txnRefNum`, `paymentRefNum` (from `init`) and the latest payment status. Use the app's
+   existing database layer. Add a durable, unique fulfillment job or the
    app's equivalent transactionally coupled to the paid transition.
 6. Checkout endpoint: `init`, save `paymentRefNum`, redirect the shopper to `paymentUrl`.
 7. Return page at `redirectUrl`: `query`, update the order, show paid / processing / not paid.

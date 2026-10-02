@@ -236,12 +236,7 @@ class PrestoPayWebhookController
                 prestoMrn: $event->prestoMrn,
                 paymentRefNum: $event->paymentRefNum,
             ));
-            DB::transaction(function () use ($event, $payment) {
-                if (DB::table('presto_webhook_events')->insertOrIgnore(['event_ref_num' => $event->eventRefNum]) > 0) {
-                    $order = Order::where('txn_ref_num', $event->txnRefNum)->lockForUpdate()->firstOrFail();
-                    $this->orderPayments->applyPaymentStatus($order, $payment->paymentStatus);
-                }
-            });
+            $this->orderPayments->applyStatus($event->txnRefNum, $payment->paymentStatus);
             $ack = NotifyAck::Ok;
         } catch (\Throwable $error) {
             $ack = NotifyAck::Resend;
@@ -252,13 +247,16 @@ class PrestoPayWebhookController
 }
 ```
 
-`presto_webhook_events.event_ref_num` has a unique index. Exclude the route from CSRF: in Laravel 11+,
+`applyStatus` is the same method the return page calls. Inside `DB::transaction`, it runs one conditional update
+(`Order::where('txn_ref_num', $ref)->where('status', PaymentStatus::PENDING_AUTHORISE)->update([...])`) and
+dispatches the fulfillment job only when that changed a row and the new status is `Authorised`. A redelivery
+changes nothing. Exclude the route from CSRF: in Laravel 11+,
 `$middleware->validateCsrfTokens(except: ['presto/notify'])` in `bootstrap/app.php`; in older versions, the
 `$except` array of `VerifyCsrfToken`. Or define it in `routes/api.php`.
 
 Symfony: same shape with `$request->getContent()`, `new Response($ack->body(), 200, ['Content-Type' =>
-'application/json'])`, and Doctrine DBAL `$db->transactional(...)` with
-`INSERT ... ON CONFLICT DO NOTHING` (PostgreSQL) or `INSERT IGNORE` (MySQL). Complete Laravel and Symfony
+'application/json'])`, and Doctrine DBAL `$db->transactional(...)` around the same conditional
+`UPDATE orders ... WHERE status = 'PendingAuthorise'`. Complete Laravel and Symfony
 handlers: https://github.com/prestoconnect/presto-pay-sdk-php/blob/main/docs/webhooks.md
 
 Several `mid`s: `new WebhookVerifier(['MID_A', 'MID_B'], [$prestoKey])`; use `$event->mid` to pick the matching
@@ -266,7 +264,7 @@ Several `mid`s: `new WebhookVerifier(['MID_A', 'MID_B'], [$prestoKey])`; use `$e
 doesn't need `PrestoPay`'s key.
 
 Freshness window: third constructor argument, `maxTimestampAge` in seconds (default 900). Widen only with
-`eventRefNum` dedup in place.
+the guarded order update in place.
 
 ## Refunds and errors
 

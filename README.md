@@ -25,7 +25,7 @@ Ask your agent things like:
 - "We're going live with Presto next week. Review our integration."
 
 The skill detects your language and framework, uses the SDK's real API, and keeps to the rules that protect your
-money: status only from `query`, raw-body webhook verification, deduplicated webhooks, no blind refund retries,
+money: status only from `query`, raw-body webhook verification, webhooks guarded on the order's status, no blind refund retries,
 and no secrets in source control.
 
 ## Install
@@ -67,7 +67,7 @@ plugins/prestoconnect/skills/presto-pay/
   references/
     setup.md                    keys, credentials, configuration, several merchants
     checkout.md                 payment flow, statuses, payment methods
-    webhooks.md                 raw-body verification, replies, deduplication
+    webhooks.md                 raw-body verification, replies, redeliveries
     refunds-and-errors.md       reverse vs refund, errors, unknown outcomes, retries
     go-live.md                  checklist, troubleshooting, reviewing an integration
     lang/{go,java,js,php,python}.md   SDK code per language and framework

@@ -198,12 +198,11 @@ Replies: `NotifyAck.OK` (`{"resend":false}`), `NotifyAck.RESEND` (`{"resend":tru
 (`PrestoPayResponseError` with `source == "webhook"`), `RESEND` for anything else, including a failed `query`
 inside the handler. Catch `PrestoPaySignatureError` first and answer 401.
 
-Flask, with a unique `event_ref_num` column for dedup:
+Flask, with the order update guarded on the order's current status:
 
 ```python
 from flask import request
 from presto_pay import NotifyAck, PrestoPaySignatureError
-from sqlalchemy.exc import IntegrityError
 
 
 @app.post("/presto/notify")
@@ -217,14 +216,8 @@ def presto_notify():
 
     try:
         payment = presto.payments.query(presto_mrn=event.presto_mrn, payment_ref_num=event.payment_ref_num)
-        try:
-            db.session.add(WebhookEvent(event_ref_num=event.event_ref_num))
-            db.session.flush()
-        except IntegrityError:
-            db.session.rollback()
-        else:
-            apply_payment_result(Order.by_txn_ref_num(event.txn_ref_num), payment)
-            db.session.commit()
+        orders.apply_status(event.txn_ref_num, payment.payment_status)
+        db.session.commit()
         body = NotifyAck.OK
     except Exception as exc:
         db.session.rollback()
@@ -232,12 +225,17 @@ def presto_notify():
     return body, 200, {"Content-Type": NotifyAck.CONTENT_TYPE}
 ```
 
-Django: same shape with `request.body`, `@csrf_exempt`, `@require_POST`, `transaction.atomic()` around creating
-the event row and updating the order, and `HttpResponse(body, content_type=NotifyAck.CONTENT_TYPE)`.
+`orders.apply_status` is the same function the return page calls: one conditional
+`UPDATE orders SET status = ... WHERE txn_ref_num = ... AND status = 'PendingAuthorise'`, adding the fulfillment
+job only when it changed a row and the new status is `Authorised`. A redelivery changes nothing.
+
+Django: same shape with `request.body`, `@csrf_exempt`, `@require_POST`, `transaction.atomic()` around the
+guarded order update, and `HttpResponse(body, content_type=NotifyAck.CONTENT_TYPE)`.
 
 FastAPI: same shape with `presto.webhooks.verify(await request.body())`, `await presto.payments.query(...)`, and
-`Response(body, media_type=NotifyAck.CONTENT_TYPE)`. With asyncpg, an
-`INSERT ... ON CONFLICT DO NOTHING RETURNING event_ref_num` inside `connection.transaction()` gives atomic dedup.
+`Response(body, media_type=NotifyAck.CONTENT_TYPE)`. With asyncpg, the conditional
+`UPDATE ... WHERE status = 'PendingAuthorise' RETURNING txn_ref_num` inside `connection.transaction()` tells you
+whether this call finalised the order.
 
 Complete Django, Flask and FastAPI handlers:
 https://github.com/prestoconnect/presto-pay-sdk-python/blob/main/docs/webhooks.md
@@ -257,7 +255,7 @@ event = verifier.verify(body)
 ```
 
 Freshness window: `WebhookOptions(max_timestamp_age=...)` on the client, or `max_timestamp_age=` on
-`create_webhook_verifier`; `None` disables it. Widen only with `event_ref_num` dedup in place.
+`create_webhook_verifier`; `None` disables it. Widen only with the guarded order update in place.
 
 ## Refunds and errors
 

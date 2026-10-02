@@ -220,9 +220,9 @@ app.post('/presto/notify', express.raw({ type: '*/*' }), async (req, res) => {
       prestoMrn: event.prestoMrn,
       paymentRefNum: event.paymentRefNum,
     });
-    // In one transaction: insert event.eventRefNum under a unique constraint; on conflict it's a redelivery,
-    // so skip; otherwise apply payment.paymentStatus to the order for event.txnRefNum.
-    await handleWebhookOnce(event.eventRefNum, event.txnRefNum, payment.paymentStatus);
+    // One conditional update shared with the return page: finalises the order only if it is still
+    // PendingAuthorise, and inserts the fulfillment job only on the change into Authorised.
+    await orders.applyStatus(event.txnRefNum, payment.paymentStatus);
   } catch {
     res.type('json').send(NotifyAck.resend);
     return;
@@ -251,7 +251,7 @@ export async function POST(request: Request): Promise<Response> {
       prestoMrn: event.prestoMrn,
       paymentRefNum: event.paymentRefNum,
     });
-    await handleWebhookOnce(event.eventRefNum, event.txnRefNum, payment.paymentStatus);
+    await orders.applyStatus(event.txnRefNum, payment.paymentStatus);
   } catch {
     return NotifyAck.resendResponse();
   }
@@ -275,7 +275,7 @@ const event = await verifier.verify(request); // event.mid picks the client to q
 ```
 
 Freshness window: `webhooks: { maxTimestampAgeMs }` on `createPrestoPay`, or `maxTimestampAgeMs` on
-`createWebhookVerifier`. Widen only with `eventRefNum` dedup in place.
+`createWebhookVerifier`. Widen only with the guarded order update in place.
 
 ## Refunds and errors
 

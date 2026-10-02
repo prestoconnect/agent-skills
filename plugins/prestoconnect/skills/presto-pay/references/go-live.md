@@ -29,8 +29,8 @@ Behaviour:
 - [ ] `txnRefNum` unique per payment attempt; `paymentRefNum` stored before the redirect.
 - [ ] Return page `query`s the payment and never trusts the redirect or its parameters.
 - [ ] Webhook handler verifies the raw body, returns 401 for signature errors, `query`s the payment,
-      deduplicates on `eventRefNum` under a unique constraint in the same transaction as the order update, and
-      replies "resend" when its own processing fails.
+      applies its status with a conditional update that finalises the order only once and fulfils only on the
+      change into `Authorised`, and replies "resend" when its own processing fails.
 - [ ] Return page and webhook share one idempotent update function; fulfilment happens once.
 - [ ] After an unknown outcome: `init` resent with the same `txnRefNum`; `reverse` / `refund` only after a
       `query`.
@@ -42,9 +42,9 @@ Testing:
 
 - [ ] Unit tests with the client stubbed: paid, pending, failed, expired, unknown status, duplicate webhook,
       signature error, `query` failure inside the webhook.
-- [ ] One full payment on staging: `init`, pay on Presto's page, return page, webhook received and
-      deduplicated, then a refund or reversal. Run the SDK's staging smoke test if it has one, and strict mode in
-      staging where the SDK offers it.
+- [ ] One full payment on staging: `init`, pay on Presto's page, return page, webhook received, a
+      redelivered webhook that changes nothing, then a refund or reversal. Run the SDK's staging smoke test if
+      it has one, and strict mode in staging where the SDK offers it.
 
 ## Troubleshooting
 
@@ -56,7 +56,7 @@ Testing:
 | `1102` / `1106` | `mid` / `prestoMrn` not valid for this environment | Use the values for this environment |
 | Webhooks never arrive | `notifyUrl` not reachable: `localhost`, private address, firewall, wrong path | Public URL; tunnel such as ngrok in development; check the route accepts POST and isn't behind login or CSRF |
 | Webhooks fail signature verification | Body parsed or re-serialized before verifying; `mid` not configured on the verifier; clock off; wrong certificate | Verify the raw bytes; add the `mid`; NTP; certificate for this environment |
-| Order paid twice / fulfilled several times | No `eventRefNum` dedup, or return page and webhook both fulfil | Unique constraint on `eventRefNum`; one update function that fulfils only on the transition into `Authorised` |
+| Order paid twice / fulfilled several times | Fulfils on every webhook delivery, or return page and webhook both fulfil | One conditional update (`... WHERE status = 'PendingAuthorise'`) shared by both, fulfilling only when it moved the order into `Authorised` |
 | Shopper paid but order shows unpaid | Return page trusts the redirect but `query` failed, or webhook replied OK without processing | `query` on the return page and show "processing" for `PendingAuthorise`; reply "resend" when processing fails |
 | `paymentUrl` missing after `init` | Gateway returned no URL | Treat as a failure; don't redirect. Log the response and check the `txnType` |
 | Amount 100 times off | Major units sent instead of minor | Convert to integer minor units |
@@ -73,8 +73,8 @@ and the fix:
    logs. If one is committed, the key must be treated as compromised: generate a new pair and register it.
 3. **Status source.** Anything that marks an order paid from the redirect, redirect parameters, the webhook's
    `eventCode` / `success`, or the `init` response, instead of `query`.
-4. **Webhook.** Raw-body verification, 401 on signature errors, correct OK / resend replies, `eventRefNum`
-   dedup with a unique constraint, CSRF exemption.
+4. **Webhook.** Raw-body verification, 401 on signature errors, correct OK / resend replies, an order update
+   guarded on the order's current status, CSRF exemption.
 5. **Idempotency.** One update path for return page and webhook; fulfilment once; no generic retries around
    `reverse` / `refund`; `query` before retrying after an unknown outcome.
 6. **Money.** Integer minor units everywhere, no floats; refunds authorized and audited.
