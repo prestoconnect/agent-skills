@@ -28,6 +28,18 @@ The skill detects your language and framework, uses the SDK's real API, and keep
 money: status only from `query`, raw-body webhook verification, webhooks guarded on the order's status, no blind refund retries,
 and no secrets in source control.
 
+## Your responsibility
+
+These skills guide an AI coding agent. They don't replace your judgement. Agents make mistakes, even with a
+skill, and the code they write moves real money. You decide what to merge, and you own the code you ship:
+
+- Review every change the agent makes, especially signing, webhooks, refunds and anything that marks an order paid.
+- Test against Presto's staging environment, including a redelivered webhook and a refund, before going live.
+- Treat the installed SDK's documentation and your agreement with Presto as the authority where they differ from
+  a skill.
+
+The skills are provided as is, without warranty, under the [Apache License 2.0](LICENSE).
+
 ## Install
 
 ### Claude Code
