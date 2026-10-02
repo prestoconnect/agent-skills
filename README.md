@@ -1,7 +1,16 @@
-# Presto Pay agent skills
+# Presto Connect agent skills
 
-An [Agent Skill](https://agentskills.io) that teaches AI coding agents to integrate the **Presto Pay** payment
-gateway correctly with the official Presto Pay SDKs for
+[Agent Skills](https://agentskills.io) from Presto Connect, shipped together as the `prestoconnect` plugin.
+
+| Skill | Purpose |
+| --- | --- |
+| [`presto-pay`](plugins/prestoconnect/skills/presto-pay) | Integrate the Presto Pay payment gateway with the official SDKs |
+
+Installing the plugin gives your agent every skill listed here, including ones added later.
+
+## presto-pay
+
+Teaches AI coding agents to integrate the **Presto Pay** payment gateway correctly with the official Presto Pay SDKs for
 [Go](https://github.com/prestoconnect/presto-pay-sdk-go),
 [Java](https://github.com/prestoconnect/presto-pay-sdk-java),
 [JavaScript/TypeScript](https://github.com/prestoconnect/presto-pay-sdk-js),
@@ -30,19 +39,19 @@ and no secrets in source control.
 
 ### Other agents
 
-The skill is the folder [`plugins/prestoconnect/skills/presto-pay`](plugins/prestoconnect/skills/presto-pay). Copy it
-into your agent's skills directory, for example for a single project:
+Each skill is a folder under [`plugins/prestoconnect/skills`](plugins/prestoconnect/skills). Copy the ones you want
+into your agent's skills directory, for example `presto-pay` for a single project:
 
 ```bash
 git clone --depth 1 https://github.com/prestoconnect/agent-skills
 cp -r agent-skills/plugins/prestoconnect/skills/presto-pay <your-agent-skills-dir>/presto-pay
 ```
 
-The folder is self-contained, so it works wherever your agent reads `SKILL.md` skills.
+Each skill folder is self-contained, so it works wherever your agent reads `SKILL.md` skills.
 
 ## What you still need from Presto
 
-The skill can't create these for you:
+For `presto-pay`, the skill can't create these for you:
 
 - A merchant ID (`mid`) and Presto merchant reference (`prestoMrn`), separately for staging and production.
 - Presto's certificate (`.der`) for each environment.
@@ -51,6 +60,8 @@ The skill can't create these for you:
 ## Contents
 
 ```
+.claude-plugin/marketplace.json     marketplace "presto-pay"
+plugins/prestoconnect/              plugin "prestoconnect"; add new skills under skills/
 plugins/prestoconnect/skills/presto-pay/
   SKILL.md                      rules, workflow, routing
   references/
