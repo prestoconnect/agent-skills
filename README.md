@@ -108,6 +108,8 @@ The trigger runner requires the Claude Code CLI. It sends each prompt in `evals/
 loads `presto-pay`. Each prompt runs three times and passes on the majority; use `--runs-per-query`, `--model`,
 and `--workers` to change that.
 
+The [2026-10-02 evaluation](evals/results-2026-10-02.md) records the latest results of both runners.
+
 When an SDK releases a version that changes its public API, update that language file and its
 `Written against` line. The online check fails if a pin is behind or release tags cannot be read; use
 `--offline` to check only local skill structure and pin syntax.
