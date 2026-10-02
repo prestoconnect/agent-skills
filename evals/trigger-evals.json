@@ -1,0 +1,22 @@
+[
+  {"query": "we just signed up with presto pay for our shopify-alternative store (node/express backend). can you wire up checkout so customers get sent to the presto payment page and come back to /orders/:id/thanks?", "should_trigger": true},
+  {"query": "Add Presto Pay to this Django app. Orders are in shop/models.py (Order has total as DecimalField). Presto gave us a mid and a prestoMrn, I've put them in .env", "should_trigger": true},
+  {"query": "our presto webhook keeps failing with PrestoPaySignatureError in prod but works on staging, handler is app/Http/Controllers/PrestoWebhookController.php", "should_trigger": true},
+  {"query": "Customer wants a refund for order #88213, it was paid through PrestoPay with GrabPay. Can you add an admin button in the Spring Boot back office that refunds a Presto payment, partial amounts allowed?", "should_trigger": true},
+  {"query": "getting error 1006 from the presto gateway on every init call. i generated the key with openssl last week. go service, client built in cmd/api/main.go", "should_trigger": true},
+  {"query": "How do I generate the merchant key pair Presto Connect asked for? They want a .der public key. We're a Java shop.", "should_trigger": true},
+  {"query": "We go live with Presto next Monday. Can you review src/payments/ and tell me what's risky before we switch PRESTOPAY_ENV to production?", "should_trigger": true},
+  {"query": "the shopper paid with touch n go but our order still says pending. return page is pages/presto/return/[id].tsx, it just reads ?status= from the URL", "should_trigger": true},
+  {"query": "set up @prestouniverse/presto-pay-sdk in our Next.js 15 app router project, we deploy on vercel", "should_trigger": true},
+  {"query": "Need to handle the case where presto init times out. Right now src/checkout.py just catches Exception and shows an error page, and some customers end up with two payments.", "should_trigger": true},
+  {"query": "can a FastAPI service receive presto notify webhooks for 3 different merchant ids on one endpoint? we're a marketplace", "should_trigger": true},
+  {"query": "cancel the presto payment if the shopper abandons checkout after 10 minutes - laravel scheduler job, payment is still PendingAuthorise", "should_trigger": true},
+  {"query": "Our Presto Trino cluster is slow on this query joining orders and payments, can you rewrite it to avoid the cross join? SELECT ... FROM hive.sales.orders o, hive.sales.payments p WHERE ...", "should_trigger": false},
+  {"query": "Add Stripe Checkout to our Express app, success_url should go to /orders/:id/thanks and handle the checkout.session.completed webhook", "should_trigger": false},
+  {"query": "write a prestodb connector config for our mysql catalog so analysts can query payments data", "should_trigger": false},
+  {"query": "Our Razorpay webhook signature verification fails in production, handler is in app/webhooks/razorpay.py, can you check we're using the raw body?", "should_trigger": false},
+  {"query": "integrate iPay88 FPX online banking into our Laravel shop for Malaysian customers", "should_trigger": false},
+  {"query": "generate an RSA 2048 key pair and a self-signed cert for our internal mTLS between services, export the cert as DER", "should_trigger": false},
+  {"query": "refactor src/billing/refunds.ts so partial refunds are stored as integer cents instead of floats, we use Adyen", "should_trigger": false},
+  {"query": "the 'presto' theme in our docs site looks broken in dark mode, fix the css in docs/theme/presto.css", "should_trigger": false}
+]

@@ -1,0 +1,16 @@
+{
+  "name": "presto-pay",
+  "owner": {
+    "name": "Presto Connect"
+  },
+  "metadata": {
+    "description": "Agent skills for integrating the Presto Pay payment gateway with the official Presto Pay SDKs."
+  },
+  "plugins": [
+    {
+      "name": "presto-pay",
+      "source": "./plugins/presto-pay",
+      "description": "Integrate Presto Pay checkout, webhooks, refunds and go-live with the official Go, Java, JavaScript, PHP and Python SDKs."
+    }
+  ]
+}
